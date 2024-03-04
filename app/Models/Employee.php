@@ -11,9 +11,6 @@ class Employee extends Model
     use HasFactory;
     use SoftDeletes;
 
-    protected $keyType = 'string';
-    public $incrementing = false;
-
     /**
     * fillable
     *
