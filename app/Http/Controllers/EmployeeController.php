@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,11 +14,20 @@ class EmployeeController extends Controller
     public function index(Request $request) : JsonResponse {
         $limit = $request->input('limit', 10);
         $page = $request->input('page', 1);
-        $employees = Employee::paginate($limit, ['*'], 'page', $page);
-
+        $searchQuery = $request->input('q');
+        $query = Employee::query();
+        if ($searchQuery) {
+            $query->where(function (Builder $builder) use ($searchQuery) {
+                $builder
+                    ->where('full_name', 'like', "%$searchQuery%")
+                    ->orWhere('username', 'like', "%$searchQuery%");
+            });
+        }
+        $employees =  $query->paginate($limit, ['*'], 'page', $page);
+        $message = $employees->isEmpty() ? 'No matching records found' : 'Employees fetched';
         $data = [
             'status' => 200,
-            'message' => 'Employees fetched',
+            'message' => $message,
             'data' => $employees->items(),
             'pagination' => [
                 'current_page' => $employees->currentPage(),
