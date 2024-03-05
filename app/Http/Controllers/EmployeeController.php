@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 
 class EmployeeController extends Controller
 {
@@ -41,7 +41,7 @@ class EmployeeController extends Controller
         $validator = Validator::make($request->all(), [
             'full_name' => 'required|string',
             'username' => 'required|string|unique:employees,username',
-            'pin' => 'required_without_all:face_recognition,finger_print|numeric',
+            'pin' => 'required_without_all:face_recognition,finger_print|numeric|min:6|max:6',
             'face_recognition' => 'required_without_all:pin,finger_print|string',
             'finger_print' => 'required_without_all:pin,face_recognition|string',
         ]);
@@ -70,7 +70,7 @@ class EmployeeController extends Controller
         ]);
     }
 
-    public function show(string $id) {
+    public function show(string $id) : JsonResponse {
         if (!intval($id)) {
             return response()->json([
                 'status' => 400,
@@ -78,18 +78,59 @@ class EmployeeController extends Controller
             ], 400);
         }
 
-        $employee = Employee::find($id);
-
-        if (!$employee) {
+        try {
+            $employee = Employee::findOrFail($id);
+        } catch (ModelNotFoundException $e) {
             return response()->json([
                 'status' => 404,
                 'message' => 'Employee not found',
-            ]);
+            ], 404);
         }
 
         return response()->json([
             'status' => 200,
             'message' => 'Employee fetched',
+            'data' => $employee,
+        ]);
+    }
+
+    public function update(Request $request, string $id) : JsonResponse {
+        if (!intval($id)) {
+            return response()->json([
+                'status' => 400,
+                'message' => 'Invalid ID format. ID must be a numeric.',
+            ], 400);
+        }
+        try {
+            $employee = Employee::findOrFail($id);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 404,
+                'message' => 'Employee not found',
+            ], 404);
+        }
+        $validator = Validator::make($request->all(), [
+            'full_name' => 'string',
+            'username' => 'string',
+            'pin' => 'numeric|min:6|max:6',
+            'face_recognition' => 'string',
+            'finger_print' => 'string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $fillableFields = $request->only(['full_name', 'username', 'pin', 'face_recognition', 'finger_print']);
+        $employee->fill($fillableFields);
+        $employee->is_pin = $request->filled('pin') ? true : $employee->is_pin;
+        $employee->is_face_recognition = $request->filled('face_recognition') ? true : $employee->is_face_recognition;
+        $employee->is_finger_print = $request->filled('finger_print') ? true : $employee->is_finger_print;
+        $employee->save();
+
+        return response()->json([
+            'status' => 200,
+            'message' => 'Employee updated',
             'data' => $employee,
         ]);
     }
