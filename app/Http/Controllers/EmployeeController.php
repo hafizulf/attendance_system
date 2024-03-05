@@ -69,4 +69,28 @@ class EmployeeController extends Controller
             'data' => $employee,
         ]);
     }
+
+    public function show(string $id) {
+        if (!intval($id)) {
+            return response()->json([
+                'status' => 400,
+                'message' => 'Invalid ID format. ID must be a numeric.',
+            ], 400);
+        }
+
+        $employee = Employee::find($id);
+
+        if (!$employee) {
+            return response()->json([
+                'status' => 404,
+                'message' => 'Employee not found',
+            ]);
+        }
+
+        return response()->json([
+            'status' => 200,
+            'message' => 'Employee fetched',
+            'data' => $employee,
+        ]);
+    }
 }
