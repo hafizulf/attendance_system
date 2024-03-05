@@ -134,4 +134,27 @@ class EmployeeController extends Controller
             'data' => $employee,
         ]);
     }
+
+    public function destroy(string $id) : JsonResponse {
+        if (!intval($id)) {
+            return response()->json([
+                'status' => 400,
+                'message' => 'Invalid ID format. ID must be a numeric.',
+            ], 400);
+        }
+        try {
+            $employee = Employee::findOrFail($id);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 404,
+                'message' => 'Employee not found',
+            ], 404);
+        }
+
+        $employee->delete();
+        return response()->json([
+            'status' => 200,
+            'message' => 'Employee deleted',
+        ]);
+    }
 }
