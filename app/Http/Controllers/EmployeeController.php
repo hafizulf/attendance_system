@@ -51,7 +51,7 @@ class EmployeeController extends Controller
         $validator = Validator::make($request->all(), [
             'full_name' => 'required|string',
             'username' => 'required|string|unique:employees,username',
-            'pin' => 'required_without_all:face_recognition,finger_print|numeric|min:6|max:6',
+            'pin' => 'required_without_all:face_recognition,finger_print|numeric|min:6',
             'face_recognition' => 'required_without_all:pin,finger_print|string',
             'finger_print' => 'required_without_all:pin,face_recognition|string',
         ]);
@@ -66,12 +66,11 @@ class EmployeeController extends Controller
             'pin' => $request->input('pin'),
             'face_recognition' => $request->input('face_recognition'),
             'finger_print' => $request->input('finger_print'),
+            'is_pin' => $request->filled('pin'),
+            'is_face_recognition' => $request->filled('face_recognition'),
+            'is_finger_print' => $request->filled('finger_print'),
         ];
         $employee = Employee::create($data);
-        $employee->is_pin = $request->filled('pin');
-        $employee->is_face_recognition = $request->filled('face_recognition');
-        $employee->is_finger_print = $request->filled('finger_print');
-        $employee->save();
 
         return response()->json([
             'status' => 201,
@@ -122,7 +121,7 @@ class EmployeeController extends Controller
         $validator = Validator::make($request->all(), [
             'full_name' => 'string',
             'username' => 'string',
-            'pin' => 'numeric|min:6|max:6',
+            'pin' => 'numeric|min:6',
             'face_recognition' => 'string',
             'finger_print' => 'string',
         ]);
