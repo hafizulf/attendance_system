@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('employee_id')->nullable()->constrained('employees')->cascadeOnUpdate()->nullOnDelete();
             $table->date('date');
             $table->time('time_in');
-            $table->time('time_out');
+            $table->time('time_out')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

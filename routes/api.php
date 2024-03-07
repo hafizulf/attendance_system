@@ -28,3 +28,9 @@ Route::prefix('employees')
         Route::put('/{id}', 'update');
         Route::delete('/{id}', 'destroy');
     });
+
+Route::prefix('attendances')
+    ->controller(App\Http\Controllers\AttendanceController::class)
+    ->group(function () {
+        Route::put('/check-in/{employeeId}', 'updateCheckIn');
+    });
