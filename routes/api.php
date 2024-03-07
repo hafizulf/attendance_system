@@ -32,5 +32,6 @@ Route::prefix('employees')
 Route::prefix('attendances')
     ->controller(App\Http\Controllers\AttendanceController::class)
     ->group(function () {
-        Route::put('/check-in/{employeeId}', 'checkIn');
+        Route::post('/check-in/{employeeId}', 'checkIn');
+        Route::patch('/check-out/{employeeId}', 'checkOut');
     });
