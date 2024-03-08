@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\ReportController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -30,8 +32,16 @@ Route::prefix('employees')
     });
 
 Route::prefix('attendances')
-    ->controller(App\Http\Controllers\AttendanceController::class)
+    ->controller(AttendanceController::class)
     ->group(function () {
         Route::post('/check-in/{employeeId}', 'checkIn');
         Route::patch('/check-out/{employeeId}', 'checkOut');
+    });
+
+Route::prefix('report')
+    ->controller(ReportController::class)
+    ->group(function () {
+        Route::get('/date-range', 'dateRangeReport');
+        Route::get('/monthly/{monthInEnglish}', 'monthlyReport');
+        Route::get('/yearly/{year}', 'yearlyReport');
     });

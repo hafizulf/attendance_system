@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Employee extends Model
@@ -26,4 +27,8 @@ class Employee extends Model
         'face_recognition',
         'finger_print',
     ];
+
+    public function attendance() : HasMany {
+        return $this->hasMany(Attendance::class);
+    }
 }
