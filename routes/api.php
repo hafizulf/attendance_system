@@ -3,6 +3,7 @@
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SeedController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -44,4 +45,10 @@ Route::prefix('report')
         Route::get('/date-range', 'dateRangeReport');
         Route::get('/monthly/{monthInEnglish}', 'monthlyReport');
         Route::get('/yearly/{year}', 'yearlyReport');
+    });
+
+Route::prefix('seed')
+    ->controller(SeedController::class)
+    ->group(function () {
+        Route::post('/holidays', 'seedHolidayData');
     });
