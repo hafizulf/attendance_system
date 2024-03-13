@@ -11,6 +11,11 @@ use DateTime;
 
 class ReportController extends Controller
 {
+    protected $attendanceModel;
+    public function __construct(Attendance $attendanceModel) {
+        $this->attendanceModel = $attendanceModel;
+    }
+
     public function dateRangeReport(Request $request) : JsonResponse {
         $currentDate = date('Y-m-d');
         $currentYear = date('Y', strtotime($currentDate));
@@ -20,8 +25,7 @@ class ReportController extends Controller
         $endDate = $request->has('endDate') ? $request->input('endDate') : "$currentYear-$currentMonth-$lastDayOfMonth";
 
         $employees = Employee::select('id', 'full_name', 'username')->get();
-        $attendanceModel = new Attendance();
-        $attendancesByEmployee = $attendanceModel->getAttendancesWithGroupByEmployee($startDate, $endDate);
+        $attendancesByEmployee = $this->attendanceModel->getAttendancesWithGroupByEmployee($startDate, $endDate);
         $tempAttendances = $this->_transformReport($startDate, $endDate, $employees, $attendancesByEmployee);
 
         return response()->json([
@@ -37,8 +41,7 @@ class ReportController extends Controller
         $endDate = date('Y-m-t', strtotime($startDate));
 
         $employees = Employee::select('id', 'full_name', 'username')->get();
-        $attendanceModel = new Attendance();
-        $attendancesByEmployee = $attendanceModel->getAttendancesWithGroupByEmployee($startDate, $endDate);
+        $attendancesByEmployee = $this->attendanceModel->getAttendancesWithGroupByEmployee($startDate, $endDate);
         $tempAttendances = $this->_transformReport($startDate, $endDate, $employees, $attendancesByEmployee);
 
         return response()->json([
@@ -110,11 +113,24 @@ class ReportController extends Controller
     }
 
 
-    private function _isHoliday($date) {
+    private function _isHoliday(string $date) : bool {
         $holidayExist = Holiday::where('date', $date)->get()->first();
         if($holidayExist) {
             return true;
         }
         return false;
+    }
+
+    public function yearlyReport(string $year) : JsonResponse {
+        $startDate = "$year-01-01";
+        $endDate = "$year-12-31";
+        $employees = Employee::select('id', 'full_name', 'username')->get();
+        $attendancesByEmployee = $this->attendanceModel->getAttendancesWithGroupByEmployee($startDate, $endDate);
+        $tempAttendances = $this->_transformReport($startDate, $endDate, $employees, $attendancesByEmployee);
+
+        return response()->json([
+            'status' => 200,
+            'data' => array_values($tempAttendances),
+        ]);
     }
 }
