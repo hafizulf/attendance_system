@@ -4,11 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Attendance;
 use App\Models\Employee;
-use Exception;
+use App\Models\Holiday;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use DateTime;
-use Yasumi\Yasumi;
 
 class ReportController extends Controller
 {
@@ -22,13 +21,11 @@ class ReportController extends Controller
     }
 
     private function isHoliday($date) {
-        try {
-            $holidays = Yasumi::create('Indonesia', date('Y', strtotime($date)));
-            return $holidays->isHoliday($date);
-        } catch (Exception $e) {
-            // Handle any exceptions, such as invalid date or country not supported
-            return false; // Assume it's not a holiday if an error occurs
+        $holidayExist = Holiday::where('date', $date)->get()->first();
+        if($holidayExist) {
+            return true;
         }
+        return false;
     }
 
     public function dateRangeReport(Request $request) : JsonResponse {
