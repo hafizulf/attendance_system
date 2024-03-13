@@ -76,8 +76,10 @@ class ReportController extends Controller
             foreach ($attendances[$employee->id] ?? [] as $attendance) {
                 $timeInHoursMinutes = date('H:i', strtotime($attendance->time_in));
                 $timeOutHoursMinutes = date('H:i', strtotime($attendance->time_out));
-                $late = ($timeInHoursMinutes > '08:00') ? true : false;
-                $earlyLeave = ($timeOutHoursMinutes < '17:00') ? true : false;
+                $lateThreshold = env('LATE_THRESHOLD', '08:00');
+                $earlyLeaveThreshold = env('EARLY_LEAVE_THRESHOLD', '17:00');
+                $late = ($timeInHoursMinutes > $lateThreshold) ? true : false;
+                $earlyLeave = ($timeOutHoursMinutes < $earlyLeaveThreshold) ? true : false;
 
                  // Check if the attendance date is a holiday
                 $attendanceDate = $attendance->date;
