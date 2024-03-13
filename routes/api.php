@@ -45,6 +45,7 @@ Route::prefix('report')
         Route::get('/date-range', 'dateRangeReport');
         Route::get('/monthly/{monthInEnglish}', 'monthlyReport');
         Route::get('/yearly/{year}', 'yearlyReport');
+        Route::get('/employee/{employeeId}', 'employeeReport');
     });
 
 Route::prefix('seed')
