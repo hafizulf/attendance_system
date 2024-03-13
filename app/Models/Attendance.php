@@ -28,4 +28,13 @@ class Attendance extends Model
     public function employee(): BelongsTo {
         return $this->belongsTo(Employee::class, 'employee_id', 'id');
     }
+
+    public function getAttendancesWithGroupByEmployee(string $startDate, string $endDate) {
+        return Attendance::with(['employee' => function ($query) {
+                $query->select('id', 'full_name', 'username');
+            }])
+            ->whereBetween('date', [$startDate, $endDate])
+            ->get(['employee_id', 'date', 'time_in', 'time_out'])
+            ->groupBy('employee_id');
+    }
 }

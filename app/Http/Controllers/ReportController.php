@@ -11,23 +11,6 @@ use DateTime;
 
 class ReportController extends Controller
 {
-    private function _getAttendancesWithGroupByEmployee(string $startDate, string $endDate) {
-        return Attendance::with(['employee' => function ($query) {
-            $query->select('id', 'full_name', 'username');
-        }])
-            ->whereBetween('date', [$startDate, $endDate])
-            ->get(['employee_id', 'date', 'time_in', 'time_out'])
-            ->groupBy('employee_id');
-    }
-
-    private function isHoliday($date) {
-        $holidayExist = Holiday::where('date', $date)->get()->first();
-        if($holidayExist) {
-            return true;
-        }
-        return false;
-    }
-
     public function dateRangeReport(Request $request) : JsonResponse {
         $currentDate = date('Y-m-d');
         $currentYear = date('Y', strtotime($currentDate));
@@ -37,7 +20,44 @@ class ReportController extends Controller
         $endDate = $request->has('endDate') ? $request->input('endDate') : "$currentYear-$currentMonth-$lastDayOfMonth";
 
         $employees = Employee::select('id', 'full_name', 'username')->get();
-        $attendances = $this->_getAttendancesWithGroupByEmployee($startDate, $endDate);
+        $attendanceModel = new Attendance();
+        $attendancesByEmployee = $attendanceModel->getAttendancesWithGroupByEmployee($startDate, $endDate);
+        $tempAttendances = $this->_transformReport($startDate, $endDate, $employees, $attendancesByEmployee);
+
+        return response()->json([
+            'status' => 200,
+            'data' => array_values($tempAttendances),
+        ]);
+    }
+
+    public function monthlyReport(Request $request, string $month) : JsonResponse {
+        $monthNumber = date('m', strtotime("1 $month"));
+        $year = date('Y');
+        $startDate = "$year-$monthNumber-01";
+        $endDate = date('Y-m-t', strtotime($startDate));
+
+        $employees = Employee::select('id', 'full_name', 'username')->get();
+        $attendanceModel = new Attendance();
+        $attendancesByEmployee = $attendanceModel->getAttendancesWithGroupByEmployee($startDate, $endDate);
+        $tempAttendances = $this->_transformReport($startDate, $endDate, $employees, $attendancesByEmployee);
+
+        return response()->json([
+            'status' => 200,
+            'data' => array_values($tempAttendances),
+        ]);
+    }
+
+    /**
+     * Transform report data.
+     *
+     * @param string $startDate The start date.
+     * @param string $endDate   The end date.
+     * @param mixed ...$args    Employee, attendances
+     * @return array            Transformed data array.
+     */
+    private function _transformReport(string $startDate, string $endDate, ...$args) : array {
+        $employees = $args[0];
+        $attendances = $args[1];
         $tempAttendances = [];
         foreach ($employees as $employee) {
             $tempAttendances[$employee->id] = [
@@ -58,7 +78,7 @@ class ReportController extends Controller
 
                  // Check if the attendance date is a holiday
                 $attendanceDate = $attendance->date;
-                $isHoliday = $this->isHoliday($attendanceDate);
+                $isHoliday = $this->_isHoliday($attendanceDate);
 
                 $tempAttendances[$employee->id]['attendances'][] = [
                     'date' => $attendanceDate,
@@ -86,24 +106,15 @@ class ReportController extends Controller
             $tempAttendances[$employee->id]['absence_percentage'] = number_format($absencePercentage, 2) . '%';
         }
 
-        return response()->json([
-            'status' => 200,
-            'data' => array_values($tempAttendances),
-        ]);
+        return $tempAttendances;
     }
 
-    public function monthlyReport(Request $request, string $month) : JsonResponse {
-        $monthNumber = date('m', strtotime("1 $month"));
-        $year = date('Y');
-        $startDate = "$year-$monthNumber-01";
-        $endDate = date('Y-m-t', strtotime($startDate));
 
-        $attendances = $attendances = $this->_getAttendancesWithGroupByEmployee($startDate, $endDate);
-        // Process the attendance data and generate the response as needed
-
-        return response()->json([
-            'status' => 200,
-            'attendances' => $attendances,
-        ]);
+    private function _isHoliday($date) {
+        $holidayExist = Holiday::where('date', $date)->get()->first();
+        if($holidayExist) {
+            return true;
+        }
+        return false;
     }
 }
