@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\GenerateReportController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SeedController;
 use Illuminate\Http\Request;
@@ -53,3 +54,5 @@ Route::prefix('seed')
     ->group(function () {
         Route::post('/holidays', 'seedHolidayData');
     });
+
+Route::get('/generate-attendance-report', [GenerateReportController::class, 'generateAttendancesExcelFile']);

@@ -58,7 +58,7 @@ class ReportController extends Controller
      * @param mixed ...$args    Employee, attendances
      * @return array            Transformed data array.
      */
-    private function _transformReport(string $startDate, string $endDate, ...$args) : array {
+    protected function _transformReport(string $startDate, string $endDate, ...$args) : array {
         $employees = $args[0];
         $attendances = $args[1];
         $tempAttendances = [];
@@ -69,7 +69,7 @@ class ReportController extends Controller
                 'username' => $employee->username,
                 'late_count' => 0,
                 'early_leave_count' => 0,
-                'absence_percentage' => 0,
+                'work_percentage' => 0,
                 'attendances' => [],
             ];
 
@@ -108,7 +108,7 @@ class ReportController extends Controller
             $totalDays = $startDateTime->diff($endDateTime)->days + 1;
             $absenceDays = $totalDays - sizeof($tempAttendances[$employee->id]['attendances']);
             $absencePercentage = $totalDays > 0 ? (($totalDays - $absenceDays) / $totalDays) * 100 : 0;
-            $tempAttendances[$employee->id]['absence_percentage'] = number_format($absencePercentage, 2) . '%';
+            $tempAttendances[$employee->id]['work_percentage'] = number_format($absencePercentage, 2) . '%';
         }
 
         return $tempAttendances;
@@ -159,7 +159,7 @@ class ReportController extends Controller
             'username' => $employee->username,
             'late_count' => 0,
             'early_leave_count' => 0,
-            'absence_percentage' => 0,
+            'work_percentage' => 0,
             'attendances' => [],
         ];
 
@@ -196,7 +196,7 @@ class ReportController extends Controller
         $totalDays = $startDateTime->diff($endDateTime)->days + 1;
         $absenceDays = $totalDays - sizeof($tempAttendances['attendances']);
         $absencePercentage = $totalDays > 0 ? (($totalDays - $absenceDays) / $totalDays) * 100 : 0;
-        $tempAttendances['absence_percentage'] = number_format($absencePercentage, 2) . '%';
+        $tempAttendances['work_percentage'] = number_format($absencePercentage, 2) . '%';
 
         return response()->json([
             'status' => 200,
