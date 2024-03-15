@@ -2,17 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Exports\AttendancesExport;
 use App\Models\Attendance;
 use App\Models\Employee;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Worksheet\ColumnDimension;
 
 
 class GenerateReportController extends ReportController
 {
-    public function generateAttendancesExcelFile(Request $request) {
+    public function generateAttendancesExcelFile(Request $request)
+    {
         $currentDate = date('Y-m-d');
         $currentYear = date('Y', strtotime($currentDate));
         $currentMonth = date('m', strtotime($currentDate));
@@ -26,17 +29,66 @@ class GenerateReportController extends ReportController
         $reportData = $this->_transformReport($startDate, $endDate, $employees, $attendancesByEmployee);
         $datas = array_values($reportData);
 
-        $data = [];
-        foreach($datas as $item) {
-            $data[] = [
-                'Nama' => $item['nama'],
-                'Username' => $item['username'],
-                'Late Count' => (string)$item['late_count'],
-                'Early Leave Count' => (string)$item['early_leave_count'],
-                'Work Percentage' => $item['work_percentage'],
+        // Create a new PhpSpreadsheet instance
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Page 1');
+        $headings = [
+            'Nama',
+            'Username',
+            'Late Count',
+            'Early Leave Count',
+            'Work Percentage',
+        ];
+        $sheet->fromArray([$headings], NULL, 'B4');
+        $sheet->getStyle('B4:F4')->applyFromArray([
+            'font' => [
+                'bold' => true,
+            ],
+        ]);
+
+        // Set data starting from cell B5
+        $rowData = [];
+        foreach ($datas as $item) {
+            $rowData[] = [
+                $item['nama'],
+                $item['username'],
+                (string)$item['late_count'],
+                (string)$item['early_leave_count'],
+                $item['work_percentage'],
             ];
         }
-        // Export data to Excel
-        return Excel::download(new AttendancesExport($data), 'attendance.xlsx');
+        $sheet->fromArray($rowData, NULL, 'B5');
+
+        // Set alignment for all cells
+        $alignment = [
+            'horizontal' => Alignment::HORIZONTAL_CENTER,
+            'vertical' => Alignment::VERTICAL_CENTER,
+        ];
+        $sheet->getStyle('B4:F' . (count($rowData) + 4))->applyFromArray([ // add 4 because we start from B4
+            'alignment' => $alignment,
+        ]);
+        // Set borders for the data range
+        $lastDataRow = count($rowData) + 4;
+        $borderStyle = [
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                ],
+            ],
+        ];
+        $sheet->getStyle("B4:F{$lastDataRow}")->applyFromArray($borderStyle);
+        // Auto-size columns based on heading length
+        foreach(range('B','F') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+        // Create a writer object and export the spreadsheet
+        $writer = new Xlsx($spreadsheet);
+        $filename = 'attendance.xlsx';
+        $temp_file = tempnam(sys_get_temp_dir(), $filename);
+        $writer->save($temp_file);
+
+        // Download the file
+        return response()->download($temp_file, $filename)->deleteFileAfterSend(true);
     }
 }
