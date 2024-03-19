@@ -28,6 +28,11 @@ class Employee extends Model
         'finger_print',
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime:Y-m-d',
+        'updated_at' => 'datetime:Y-m-d',
+    ];
+
     public function attendance() : HasMany {
         return $this->hasMany(Attendance::class);
     }
