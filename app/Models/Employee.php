@@ -20,6 +20,7 @@ class Employee extends Model
     protected $fillable = [
         'full_name',
         'username',
+        'image',
         'is_pin',
         'is_face_recognition',
         'is_finger_print',

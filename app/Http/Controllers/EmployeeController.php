@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class EmployeeController extends Controller
 {
@@ -50,7 +52,12 @@ class EmployeeController extends Controller
     public function store(Request $request) : JsonResponse {
         $validator = Validator::make($request->all(), [
             'full_name' => 'required|string',
-            'username' => 'required|string|unique:employees,username',
+            'username' => [
+                'required',
+                'string',
+                Rule::unique('employees')->whereNull('deleted_at'),
+            ],
+            'image' => 'image|mimes:jpeg,png,jpg|max:2048',
             'pin' => 'required_without_all:face_recognition,finger_print|numeric|min:6',
             'face_recognition' => 'required_without_all:pin,finger_print|string',
             'finger_print' => 'required_without_all:pin,face_recognition|string',
@@ -59,10 +66,16 @@ class EmployeeController extends Controller
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
+        $path = "";
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('public/images');
+            $path = str_replace('public/', 'storage/', $path);
+        }
 
         $data = [
             'full_name' => $request->input('full_name'),
             'username' => $request->input('username'),
+            'image' => $path,
             'pin' => $request->input('pin'),
             'face_recognition' => $request->input('face_recognition'),
             'finger_print' => $request->input('finger_print'),
@@ -145,25 +158,40 @@ class EmployeeController extends Controller
     }
 
     public function destroy(string $id) : JsonResponse {
-        if (!intval($id)) {
+        try {
+            $validator = Validator::make(['id' => $id], [
+                'id' => 'required|numeric|exists:employees,id',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+
+            $employee = Employee::findOrFail($id);
+
+            if ($employee->image) {
+                $imagePath = public_path('images/' . $employee->image);
+                if (file_exists($imagePath)) {
+                    unlink($imagePath);
+                }
+            }
+            $employee->delete();
+
+            return response()->json([
+                'status' => 200,
+                'message' => 'Employee deleted successfully',
+            ], 200);
+        } catch (ValidationException $e) {
             return response()->json([
                 'status' => 400,
-                'message' => 'Invalid ID format. ID must be a numeric.',
+                'message' => $e->getMessage(),
+                'errors' => $validator->errors(),
             ], 400);
-        }
-        try {
-            $employee = Employee::findOrFail($id);
-        } catch (ModelNotFoundException $e) {
+        } catch (\Exception $e) {
             return response()->json([
-                'status' => 404,
-                'message' => 'Employee not found',
-            ], 404);
+                'status' => 500,
+                'message' => 'An error occurred while processing your request.',
+            ], 500);
         }
-
-        $employee->delete();
-        return response()->json([
-            'status' => 200,
-            'message' => 'Employee deleted',
-        ]);
     }
 }
